@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,6 +24,8 @@ import com.kotlin_jetpack_compose.happyfashion.components.addStory.stickers.Hash
 import com.kotlin_jetpack_compose.happyfashion.components.addStory.stickers.MentionSheet
 import com.kotlin_jetpack_compose.happyfashion.models.AudioModel
 import com.kotlin_jetpack_compose.happyfashion.models.FontDecorationModel
+
+internal val LocalState = compositionLocalOf { mutableStateOf(State.DEFAULT) }
 
 enum class State(val drawable: Int){
     MUSIC_EDIT(0),
@@ -49,11 +52,11 @@ fun AddContentScreen(){
 
     if(!haveMedia)
         Gallery {
-            println(it)
             if(it != null){
                 val item = FullDisplayUnit()
-                item.type = FullDisplayType.IMAGE
-                item.content = Pair(it, null)
+                item.type = if(it.toString().contains(".mp4")) FullDisplayType.VIDEO else FullDisplayType.IMAGE
+                //item.content = Pair(it, null)
+                item.content = it.toString()
                 fullState.add(item)
                 haveMedia = true
             }
@@ -144,9 +147,7 @@ fun AddContentScreen(){
             }
 
             State.EFFECT -> {
-                FilterComponent {
-                    fullState[0].content = Pair((fullState[0].content as Pair<*,*>).first, it)
-                }
+                FilterComponent()
             }
             // Add Later
             State.DRAW -> {}

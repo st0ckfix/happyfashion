@@ -16,10 +16,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kotlin_jetpack_compose.happyfashion.R
 
+
 val defaultMatrix = ColorMatrix(
     floatArrayOf(
         1f, 0f, 0f, 0f, 0f, // Red channel
@@ -37,6 +36,7 @@ val defaultMatrix = ColorMatrix(
         0f, 0f, 0f, 1f, 0f  // Alpha channel
     )
 )
+
 val grayscaleMatrix = ColorMatrix(
     floatArrayOf(
         0.3f, 0.3f, 0.3f, 0f, 0f, // Red channel
@@ -87,20 +87,24 @@ val moonMatrix = ColorMatrix(
 )
 
 enum class Filter(private val colorMatrix: ColorMatrix){
-    DEFAULT(defaultMatrix), BRIGHTNESS(brightnessMatrix), CONTRAST(contrastMatrix), CLARE(clarendonMatrix), GRAYSCALE(grayscaleMatrix), SEPIA(sepiaMatrix), MOON(moonMatrix);
+    DEFAULT(defaultMatrix),
+    BRIGHTNESS(brightnessMatrix),
+    CONTRAST(contrastMatrix),
+    CLARE(clarendonMatrix),
+    GRAYSCALE(grayscaleMatrix),
+    SEPIA(sepiaMatrix),
+    MOON(moonMatrix);
 
     fun getColorMatrix(): ColorMatrix {
         return colorMatrix
     }
 }
 
-
+internal val LocalFilter = compositionLocalOf { mutableStateOf(ColorMatrix(defaultMatrix.values)) }
 
 @Composable
-fun BoxScope.FilterComponent(
-    onFilter: (Filter) -> Unit
-){
-    var filterSelect by rememberSaveable { mutableStateOf(Filter.DEFAULT) }
+fun BoxScope.FilterComponent(){
+    var filter = LocalFilter.current
     LazyRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -109,10 +113,9 @@ fun BoxScope.FilterComponent(
             .align(Alignment.BottomCenter)
             .background(color = Color.Black.copy(alpha = .5f))
             .padding(all = 10.dp)) {
-        items(Filter.entries.toList()){ filter ->
-            FilterItem(filter = filter, isFilterSelect = filter == filterSelect){
-                filterSelect = filter
-                onFilter(filter)
+        items(Filter.entries.toList()){ filterColor ->
+            FilterItem(filter = filterColor, isFilterSelect = filterColor.getColorMatrix() == filter.value){
+                filter.value = it.getColorMatrix()
             }
         }
     }
@@ -142,7 +145,7 @@ fun FilterItem(filter: Filter, isFilterSelect: Boolean, onFilter: (Filter) -> Un
 @Composable
 fun FilterPreviewPreview(){
     Box{
-        FilterComponent{}
+        FilterComponent()
     }
 }
 

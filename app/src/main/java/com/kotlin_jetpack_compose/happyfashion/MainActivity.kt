@@ -19,6 +19,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,6 +70,7 @@ import com.kotlin_jetpack_compose.happyfashion.components.addStory.LocalFullDisp
 import com.kotlin_jetpack_compose.happyfashion.items.TransformGesturesItem
 import com.kotlin_jetpack_compose.happyfashion.items.TransformType
 import com.kotlin_jetpack_compose.happyfashion.models.FontDecorationModel
+import com.kotlin_jetpack_compose.happyfashion.models.PostContent
 import com.kotlin_jetpack_compose.happyfashion.models.TransformGestureModel
 import com.kotlin_jetpack_compose.happyfashion.ui.theme.HappyFashionTheme
 import kotlinx.coroutines.coroutineScope
@@ -85,75 +87,11 @@ class MainActivity : ComponentActivity() {
         FirebaseApp.initializeApp(this)
         setContent {
             HappyFashionTheme {
-                Test()
+                AddContentScreen()
             }
         }
     }
 }
-
-internal val Local = compositionLocalOf { mutableStateListOf(
-    UnitS(),
-    UnitS(),
-    UnitS()
-) }
-
-class UnitS {
-    var id: String = UUID.randomUUID().toString()
-    var num: MutableState<Int> = mutableStateOf(0)
-}
-
-@Composable
-fun Test(){
-    val listDisplay = Local.current
-
-    Column(
-        Modifier
-            .systemBarsPadding()
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        listDisplay.forEachIndexed { index, unitS ->
-            println("CREATE $index")
-            Item(unitS.num.value.toString(), index)
-        }
-            Button()
-
-
-    }
-}
-
-@Composable
-fun Item(value: String, index: Int){
-    println(index)
-    Box(modifier = Modifier) {
-        Text(text = value, fontSize = 20.sp)
-    }
-}
-
-@Composable
-fun Button(){
-    val listDisplay = Local.current
-    Row {
-        Button(onClick = {
-            listDisplay[0].num.value++
-        }) {
-            Text(text = "A")
-        }
-        Button(onClick = {
-            listDisplay[1].num.value++
-        }) {
-            Text(text = "B")
-        }
-        Button(onClick = {
-            listDisplay[2].num.value++
-        }) {
-            Text(text = "C")
-        }
-    }
-}
-
-
 
 val verticalLyric = """
     1

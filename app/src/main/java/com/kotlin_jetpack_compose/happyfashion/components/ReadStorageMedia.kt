@@ -60,7 +60,7 @@ import java.util.Locale
 import java.util.Objects
 
 enum class SHOW(val drawable: Int, val text: String) {
-    CAMERA(R.drawable.camera, "Camera"), IMAGE(R.drawable.image, "Image"), VIDEO(R.drawable.video, "Video"), ALL(R.drawable.all, "All");
+    CAMERA(R.drawable.camera, "Camera"), RECORD(R.drawable.record, "Record") ,IMAGE(R.drawable.image, "Image"), VIDEO(R.drawable.video, "Video"), ALL(R.drawable.all, "All");
     fun icon(): Int = drawable
     fun title(): String = text
 }
@@ -179,32 +179,33 @@ fun ReadStoragePermission(
 
 @Composable
 fun CameraRead(
+    mode: SHOW,
     imageUrl: (Uri) -> Unit
 ){
     val context = LocalContext.current
-    val photoFile = createImageFile(context)
-    val photoURI = FileProvider.getUriForFile(Objects.requireNonNull(context), "${context.packageName}.provider", photoFile)
+    val mediaFile = createMediaFile(context, mode)
+    val mediaURI = FileProvider.getUriForFile(Objects.requireNonNull(context), "${context.packageName}.provider", mediaFile)
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
+        contract = if(mode == SHOW.CAMERA) ActivityResultContracts.TakePicture() else ActivityResultContracts.CaptureVideo()
     ) {
         if(it){
-            println(photoURI)
-            imageUrl(photoURI)
+            println(mediaURI)
+            imageUrl(mediaURI)
         }
     }
 
     LaunchedEffect(Unit){
-        launcher.launch(photoURI)
+        launcher.launch(mediaURI)
     }
 }
 
-fun createImageFile(context: Context): File {
+fun createMediaFile(context: Context, mode: SHOW): File {
     val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+    val storageDir = context.getExternalFilesDir(if(mode == SHOW.RECORD) Environment.DIRECTORY_MOVIES else Environment.DIRECTORY_PICTURES)
     return File.createTempFile(
-        "JPEG_${timeStamp}_",
-        ".jpg",
+        "${timeStamp}_",
+        if(mode == SHOW.RECORD) ".mp4" else ".jpg",
         storageDir
     )
 }
@@ -273,6 +274,7 @@ fun GalleryDisplay(
     listVideo: List<Uri>,
     imageUrl: (Uri) -> Unit){
     var show by remember { mutableStateOf(SHOW.ALL) }
+    var mode by remember { mutableStateOf(SHOW.CAMERA) }
     var showCamera by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -284,6 +286,11 @@ fun GalleryDisplay(
             when(it){
                 SHOW.CAMERA -> {
                     showCamera = true
+                    mode = SHOW.CAMERA
+                }
+                SHOW.RECORD -> {
+                    showCamera = true
+                    mode = SHOW.RECORD
                 }
                 else -> { show = it }
             }
@@ -293,7 +300,7 @@ fun GalleryDisplay(
     }
 
     if(showCamera)
-        CameraRead(imageUrl)
+        CameraRead(mode, imageUrl)
 }
 
 @Composable
@@ -304,9 +311,7 @@ fun GalleryDisplayControl(
     Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier
         .fillMaxWidth()
         .padding(8.dp)) {
-        arrayOf(
-            SHOW.CAMERA, SHOW.IMAGE, SHOW.VIDEO, SHOW.ALL
-        ).forEach {
+        SHOW.entries.forEach {
             Box(
                 Modifier
                     .clip(shape = RoundedCornerShape(15))

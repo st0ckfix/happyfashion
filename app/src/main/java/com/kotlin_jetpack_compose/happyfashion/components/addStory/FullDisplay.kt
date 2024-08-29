@@ -1,17 +1,17 @@
 package com.kotlin_jetpack_compose.happyfashion.components.addStory
 
+import android.media.session.PlaybackState
+import androidx.annotation.OptIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
@@ -19,10 +19,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -34,28 +34,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import coil.compose.rememberAsyncImagePainter
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.PlayerView
 import com.kotlin_jetpack_compose.happyfashion.R
 import com.kotlin_jetpack_compose.happyfashion.components.LocalSubtitleDisplay
-import com.kotlin_jetpack_compose.happyfashion.components.SUBTITLE_MODE
 import com.kotlin_jetpack_compose.happyfashion.components.SubtitleDisplay
-import com.kotlin_jetpack_compose.happyfashion.components.SubtitleFlowDisplay
-import com.kotlin_jetpack_compose.happyfashion.components.SubtitleVerticalDisplay
 import com.kotlin_jetpack_compose.happyfashion.components.addStory.display.ImageDisplay
 import com.kotlin_jetpack_compose.happyfashion.items.GifImage
 import com.kotlin_jetpack_compose.happyfashion.items.TransformGesturesItem
 import com.kotlin_jetpack_compose.happyfashion.items.TransformType
-import com.kotlin_jetpack_compose.happyfashion.lyric
 import com.kotlin_jetpack_compose.happyfashion.models.AudioModel
 import com.kotlin_jetpack_compose.happyfashion.models.FontDecorationModel
 import com.kotlin_jetpack_compose.happyfashion.models.GIPHY
@@ -97,34 +96,32 @@ fun FullDisplay(
         .width(screenWidth.dp)){
 
 
-        for (i in listDisplay.indices) {
-            println("CREATE $i")
-                if (listDisplay[i].transform.value.offset == Offset.Zero) {
+        listDisplay.forEachIndexed { index, unit ->
+                if (unit.transform.value.offset == Offset.Zero) {
                     Box(modifier = modifier
                         .align(Alignment.Center)
                         .onGloballyPositioned {
-                            listDisplay[i].transform.value =
-                                listDisplay[i].transform.value.copy(offset = it.positionInParent())
+                            unit.transform.value =
+                                unit.transform.value.copy(offset = it.positionInParent())
                         }) {
                         DisplayType(
-                            modifier,
-                            type = listDisplay[i].type,
-                            content = listDisplay[i].content!!
+                            modifier = modifier,
+                            type = unit.type,
+                            content = unit.content!!
                         )
                     }
                 } else {
                     TransformGesturesItem(
                         modifier = modifier,
-                        type = if (listDisplay[i].type == FullDisplayType.DEFAULT) TransformType.EDIT_HOLDER else if (listDisplay[i].type == FullDisplayType.LABEL) TransformType.LABEL else TransformType.OTHERS,
+                        type = if (unit.type == FullDisplayType.DEFAULT) TransformType.EDIT_HOLDER else if (unit.type == FullDisplayType.LABEL) TransformType.LABEL else TransformType.OTHERS,
                         inEditing = inEditing,
-                        transformGestureModel = listDisplay[i].transform.value,
+                        transformGestureModel = unit.transform.value,
                         onTransform = { scale, rotation, offset ->
-                            listDisplay[i].transform.value = TransformGestureModel(
+                            unit.transform.value = TransformGestureModel(
                                 scale = scale,
                                 rotation = rotation,
                                 offset = offset
                             )
-
                         },
                         onTap = {
                             if (it == TransformType.EDIT_HOLDER) {
@@ -132,23 +129,22 @@ fun FullDisplay(
                                 clearEdit()
                                 return@TransformGesturesItem Unit
                             } else {
-                                onTap(listDisplay[i])
+                                onTap(unit)
                             }
                         },
                         onLongPress = {
                             inEditing = true
-                            editIndex = i
+                            editIndex = index
                             listDisplay.add(FullDisplayUnit())
-                            listDisplay.add(listDisplay[i])
-                            listDisplay.removeAt(i)
+                            listDisplay.add(unit)
+                            listDisplay.removeAt(index)
                             return@TransformGesturesItem Unit
-
                         }
                     ) {
                         DisplayType(
-                            modifier,
-                            type = listDisplay[i].type,
-                            content = listDisplay[i].content!!
+                            modifier = modifier,
+                            type = unit.type,
+                            content = unit.content!!
                         )
                     }
                 }
@@ -173,28 +169,25 @@ fun FullDisplay(
 fun DisplayType(modifier: Modifier, type: FullDisplayType, content: Any){
     when(type){
         FullDisplayType.IMAGE -> {
-            println(FullDisplayType.IMAGE.name)
-            ImageDisplay(modifier = modifier, image = (content as Pair<*,*>).first.toString(), state = State.DEFAULT, onState = {}, filter = content.second as? ColorMatrix?)
+            ImageDisplay(modifier = modifier, image = content as String)
         }
         FullDisplayType.VIDEO -> {
-            println(FullDisplayType.VIDEO.name)
+            VideoItem(uri = content as String)
         }
         FullDisplayType.GIF -> {
-            println(FullDisplayType.GIF.name)
             GifImage(gif = content as GIPHY)
         }
         FullDisplayType.LABEL -> {
-            println(FullDisplayType.LABEL.name)
             val fontDecorationModel = content as FontDecorationModel
-            Text(
-                text = fontDecorationModel.fontContent,
-                fontSize = fontDecorationModel.fontSize.sp,
+            TextItem(
+                label = fontDecorationModel.fontContent,
+                fontSize = fontDecorationModel.fontSize,
                 fontFamily = fontDecorationModel.fontFamily,
-                color = fontDecorationModel.fontColor,
-                modifier = Modifier.background(fontDecorationModel.fontBackground))
+                fontColor = fontDecorationModel.fontColor,
+                backgroundColor = fontDecorationModel.fontBackground
+            )
         }
         FullDisplayType.MUSIC -> {
-            println(FullDisplayType.MUSIC.name)
             val value = content as Pair<*, *>
             val colorState = LocalSubtitleDisplay.current
             Box {
@@ -202,23 +195,18 @@ fun DisplayType(modifier: Modifier, type: FullDisplayType, content: Any){
             }
         }
         FullDisplayType.EMOJI -> {
-            println(FullDisplayType.EMOJI.name)
             GifImage(gif = (content as GIPHY))
         }
         FullDisplayType.HASHTAG -> {
-            println(FullDisplayType.HASHTAG.name)
             Item(image = R.drawable.stk_hastag, label = (content as String))
         }
         FullDisplayType.MENTION -> {
-            println(FullDisplayType.MENTION.name)
             Item(image = R.drawable.stk_mention, label = (content as String))
         }
         FullDisplayType.PLACE -> {
-            println(FullDisplayType.PLACE.name)
             Item(image = R.drawable.stk_place, label = (content as String))
         }
         FullDisplayType.DEFAULT -> {
-            println(FullDisplayType.DEFAULT.name)
             Box(modifier = Modifier
                 .fillMaxSize()
                 .background(color = Color.Black.copy(alpha = 0.5f)))
@@ -227,7 +215,41 @@ fun DisplayType(modifier: Modifier, type: FullDisplayType, content: Any){
 }
 
 @Composable
+fun TextItem(label: String, fontSize: Int, fontFamily: FontFamily , fontColor: Color, backgroundColor: Color){
+    println("Create Label")
+    Text(
+        text = label,
+        fontSize = fontSize.sp,
+        fontFamily = fontFamily,
+        color = fontColor,
+        modifier = Modifier.background(backgroundColor))
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+fun VideoItem(uri: String) {
+    val context = LocalContext.current
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(uri))
+            prepare()
+            playWhenReady = true
+        }
+    }
+
+    AndroidView(
+        factory = {
+            PlayerView(context).apply {
+                player = exoPlayer
+                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+            }
+        }
+    )
+}
+
+@Composable
 fun Item(image: Int, label: String){
+    println("Create $label" )
     Row(
         modifier = Modifier.clip(shape = RoundedCornerShape(15)),
         verticalAlignment = Alignment.CenterVertically
