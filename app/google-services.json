@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "599260909733",
+    "project_id": "happyfashion-af31a",
+    "storage_bucket": "happyfashion-af31a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:599260909733:android:d39cf961a3641d2259fd4c",
+        "android_client_info": {
+          "package_name": "com.kotlin_jetpack_compose.happyfashion"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_OFJaCj17sAsGdOkZvLRNClNwDPPn7ts"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
